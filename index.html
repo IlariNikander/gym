@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="fi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Punttipäiväkirja</title>
+  <style>
+    :root {
+      --bg: #f4f6fa;
+      --card: #fff;
+      --text: #172033;
+      --muted: #667085;
+      --border: #dfe5ee;
+      --accent: #3157d5;
+      --danger: #b42318;
+      --ok: #177245;
+      --shadow: 0 12px 34px rgba(31,46,87,.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    main {
+      width: min(820px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 28px 0 56px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 7vw, 3.4rem);
+      letter-spacing: -.04em;
+      line-height: 1;
+    }
+
+    h2 { margin-top: 0; }
+
+    .subtitle {
+      margin: 10px 0 24px;
+      color: var(--muted);
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--card);
+      box-shadow: var(--shadow);
+    }
+
+    .auth-card {
+      max-width: 520px;
+      padding: 24px;
+    }
+
+    button, input {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .primary {
+      min-height: 48px;
+      padding: 0 17px;
+      border: 0;
+      border-radius: 13px;
+      color: #fff;
+      background: var(--accent);
+      font-weight: 800;
+    }
+
+    .secondary, .danger {
+      min-height: 40px;
+      padding: 0 12px;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      background: transparent;
+      font-weight: 750;
+    }
+
+    .danger { color: var(--danger); }
+
+    .header-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .account {
+      text-align: right;
+      color: var(--muted);
+      font-size: .88rem;
+    }
+
+    .account strong {
+      display: block;
+      color: var(--text);
+    }
+
+    .status {
+      min-height: 1.3em;
+      margin: 10px 0 16px;
+      color: var(--muted);
+      font-size: .9rem;
+    }
+
+    .status.ok { color: var(--ok); }
+    .status.error { color: var(--danger); }
+
+    .setup {
+      display: none;
+      margin: 16px 0;
+      padding: 18px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: var(--card);
+    }
+
+    .uid {
+      display: block;
+      margin: 8px 0;
+      padding: 12px;
+      border-radius: 10px;
+      background: var(--bg);
+      overflow-wrap: anywhere;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    .registry {
+      display: none;
+    }
+
+    .add-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      margin: 16px 0 10px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      min-height: 48px;
+      padding: 0 14px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      color: var(--text);
+      background: var(--card);
+      outline: none;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--accent);
+    }
+
+    .hint {
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: .9rem;
+      line-height: 1.5;
+    }
+
+    .exercise-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .exercise-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 15px 16px;
+    }
+
+    .exercise-name {
+      font-weight: 800;
+    }
+
+    .actions {
+      display: flex;
+      flex: 0 0 auto;
+      gap: 7px;
+    }
+
+    .empty {
+      padding: 22px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    [hidden] { display: none !important; }
+
+    @media (max-width: 600px) {
+      .header-row {
+        display: block;
+      }
+
+      .account {
+        margin-top: 14px;
+        text-align: left;
+      }
+
+      .add-row {
+        grid-template-columns: 1fr;
+      }
+
+      .exercise-card {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .actions {
+        width: 100%;
+      }
+
+      .actions button {
+        flex: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Punttipäiväkirja</h1>
+    <p class="subtitle">Vaihe 1 · Liikerekisteri</p>
+
+    <section id="signedOut" class="card auth-card">
+      <h2>Kirjaudu sisään</h2>
+      <p>Treeni- ja liiketiedot eivät ole näkyvissä ilman Google-kirjautumista.</p>
+      <button id="signIn" class="primary" type="button">Kirjaudu Googlella</button>
+      <div id="authStatus" class="status"></div>
+    </section>
+
+    <section id="signedIn" hidden>
+      <div class="header-row">
+        <div>
+          <h2>Liikerekisteri</h2>
+          <p class="subtitle">Liikkeet valitaan myöhemmin treeneihin tästä rekisteristä.</p>
+        </div>
+
+        <div class="account">
+          <strong id="accountEmail"></strong>
+          <button id="signOut" class="secondary" type="button">Kirjaudu ulos</button>
+        </div>
+      </div>
+
+      <div id="setupBox" class="setup">
+        <strong>Kirjautuminen toimii, mutta Firestore ei vielä salli tätä käyttäjää.</strong>
+        <p>Kopioi alla oleva Firebase UID ja vaihda se Firestore Rules -tiedoston kohtaan <code>OWNER_UID_TAHAN</code>.</p>
+        <code id="uidValue" class="uid"></code>
+        <button id="copyUid" class="secondary" type="button">Kopioi UID</button>
+      </div>
+
+      <section id="registry" class="registry">
+        <div class="add-row">
+          <input id="exerciseInput" type="text" placeholder="Kirjoita liikkeen nimi…" autocomplete="off">
+          <button id="addExercise" class="primary" type="button">Lisää liike</button>
+        </div>
+
+        <p class="hint">
+          Haku suodattaa olemassa olevia liikkeitä samalla kun kirjoitat.
+          Jos nimeä ei löydy, voit lisätä sen uutena.
+        </p>
+
+        <div id="registryStatus" class="status"></div>
+        <div id="exerciseList" class="exercise-list"></div>
+      </section>
+    </section>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import {
+      getAuth,
+      GoogleAuthProvider,
+      onAuthStateChanged,
+      signInWithPopup,
+      signInWithRedirect,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      deleteDoc,
+      doc,
+      getDocs,
+      limit,
+      onSnapshot,
+      orderBy,
+      query,
+      serverTimestamp,
+      updateDoc,
+      where,
+      writeBatch
+    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCqeww4HeFZioI04UA9ShZBKYp47r5Kp4U",
+      authDomain: "croisantinrepija-c0878.firebaseapp.com",
+      projectId: "croisantinrepija-c0878",
+      storageBucket: "croisantinrepija-c0878.firebasestorage.app",
+      messagingSenderId: "997353427368",
+      appId: "1:997353427368:web:087003202c24df08be4d9d",
+      measurementId: "G-RPZPPBGS7N"
+    };
+
+    const initialExercises = [
+      "Talja ojentajat",
+      "Vaakasoutu",
+      "Pull Down",
+      "Reiden ojennus",
+      "Reiden koukistus",
+      "Hauis",
+      "Pystyrinta (Salohalli)",
+      "Jalkaprässi",
+      "Rintaprässi",
+      "Pystypunnerrus",
+      "Epäkäs",
+      "Vatsalihakset"
+    ];
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
+
+    const signedOut = document.querySelector("#signedOut");
+    const signedIn = document.querySelector("#signedIn");
+    const authStatus = document.querySelector("#authStatus");
+    const accountEmail = document.querySelector("#accountEmail");
+    const setupBox = document.querySelector("#setupBox");
+    const uidValue = document.querySelector("#uidValue");
+    const registry = document.querySelector("#registry");
+    const registryStatus = document.querySelector("#registryStatus");
+    const exerciseInput = document.querySelector("#exerciseInput");
+    const exerciseList = document.querySelector("#exerciseList");
+
+    let exercises = [];
+    let unsubscribeExercises = null;
+    let currentUser = null;
+    let seeded = false;
+
+    function normalizeName(value) {
+      return value
+        .trim()
+        .replace(/\s+/g, " ")
+        .toLocaleLowerCase("fi-FI");
+    }
+
+    function setRegistryStatus(text, type = "") {
+      registryStatus.textContent = text;
+      registryStatus.className = `status ${type}`.trim();
+    }
+
+    async function seedExercisesIfNeeded() {
+      if (seeded || exercises.length > 0) return;
+      seeded = true;
+
+      const batch = writeBatch(db);
+
+      initialExercises.forEach(name => {
+        const ref = doc(collection(db, "gymExercises"));
+        batch.set(ref, {
+          name,
+          normalizedName: normalizeName(name),
+          createdAt: serverTimestamp()
+        });
+      });
+
+      await batch.commit();
+    }
+
+    function renderExercises() {
+      const search = normalizeName(exerciseInput.value);
+      const filtered = search
+        ? exercises.filter(ex => ex.normalizedName.includes(search))
+        : exercises;
+
+      exerciseList.replaceChildren();
+
+      if (filtered.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "card empty";
+        empty.textContent = search
+          ? "Hakua vastaavaa liikettä ei löytynyt."
+          : "Liikerekisteri on tyhjä.";
+        exerciseList.append(empty);
+        return;
+      }
+
+      filtered.forEach(exercise => {
+        const card = document.createElement("article");
+        card.className = "card exercise-card";
+
+        const name = document.createElement("span");
+        name.className = "exercise-name";
+        name.textContent = exercise.name;
+
+        const actions = document.createElement("div");
+        actions.className = "actions";
+
+        const rename = document.createElement("button");
+        rename.type = "button";
+        rename.className = "secondary";
+        rename.textContent = "Muokkaa";
+        rename.addEventListener("click", () => renameExercise(exercise));
+
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "danger";
+        remove.textContent = "Poista";
+        remove.addEventListener("click", () => removeExercise(exercise));
+
+        actions.append(rename, remove);
+        card.append(name, actions);
+        exerciseList.append(card);
+      });
+    }
+
+    async function addExercise() {
+      const name = exerciseInput.value.trim().replace(/\s+/g, " ");
+      const normalizedName = normalizeName(name);
+
+      if (!name) {
+        setRegistryStatus("Kirjoita liikkeen nimi.", "error");
+        return;
+      }
+
+      if (exercises.some(ex => ex.normalizedName === normalizedName)) {
+        setRegistryStatus("Liike löytyy jo rekisteristä.", "error");
+        return;
+      }
+
+      try {
+        await addDoc(collection(db, "gymExercises"), {
+          name,
+          normalizedName,
+          createdAt: serverTimestamp()
+        });
+
+        exerciseInput.value = "";
+        setRegistryStatus("Liike lisätty.", "ok");
+      } catch (error) {
+        console.error(error);
+        setRegistryStatus("Liikkeen lisääminen epäonnistui.", "error");
+      }
+    }
+
+    async function renameExercise(exercise) {
+      const next = window.prompt("Liikkeen uusi nimi:", exercise.name);
+      if (next === null) return;
+
+      const name = next.trim().replace(/\s+/g, " ");
+      const normalizedName = normalizeName(name);
+
+      if (!name) {
+        setRegistryStatus("Liikkeen nimi ei voi olla tyhjä.", "error");
+        return;
+      }
+
+      if (
+        exercises.some(
+          ex => ex.id !== exercise.id && ex.normalizedName === normalizedName
+        )
+      ) {
+        setRegistryStatus("Samanniminen liike löytyy jo rekisteristä.", "error");
+        return;
+      }
+
+      try {
+        await updateDoc(doc(db, "gymExercises", exercise.id), {
+          name,
+          normalizedName,
+          updatedAt: serverTimestamp()
+        });
+
+        setRegistryStatus("Liikkeen nimi päivitetty.", "ok");
+      } catch (error) {
+        console.error(error);
+        setRegistryStatus("Nimen muuttaminen epäonnistui.", "error");
+      }
+    }
+
+    async function removeExercise(exercise) {
+      setRegistryStatus("Tarkistetaan liikkeen treenihistoriaa…");
+
+      try {
+        const usedQuery = query(
+          collection(db, "gymWorkouts"),
+          where("exerciseIds", "array-contains", exercise.id),
+          limit(1)
+        );
+
+        const usedSnapshot = await getDocs(usedQuery);
+
+        if (!usedSnapshot.empty) {
+          setRegistryStatus(
+            "Liikettä ei voi poistaa, koska sillä on tallennettua treenihistoriaa.",
+            "error"
+          );
+          return;
+        }
+
+        const confirmed = window.confirm(
+          `Poistetaanko liike "${exercise.name}" rekisteristä?`
+        );
+        if (!confirmed) return;
+
+        await deleteDoc(doc(db, "gymExercises", exercise.id));
+        setRegistryStatus("Liike poistettu.", "ok");
+      } catch (error) {
+        console.error(error);
+        setRegistryStatus("Liikkeen poistamisen tarkistus epäonnistui.", "error");
+      }
+    }
+
+    function startExerciseListener() {
+      if (unsubscribeExercises) unsubscribeExercises();
+
+      const exerciseQuery = query(
+        collection(db, "gymExercises"),
+        orderBy("name")
+      );
+
+      unsubscribeExercises = onSnapshot(
+        exerciseQuery,
+        async snapshot => {
+          exercises = snapshot.docs.map(d => ({
+            id: d.id,
+            ...d.data()
+          }));
+
+          setupBox.style.display = "none";
+          registry.style.display = "block";
+          renderExercises();
+
+          if (exercises.length === 0) {
+            try {
+              await seedExercisesIfNeeded();
+            } catch (error) {
+              console.error(error);
+              setRegistryStatus("Aloitusliikkeiden lisääminen epäonnistui.", "error");
+            }
+          }
+        },
+        error => {
+          console.error(error);
+          registry.style.display = "none";
+
+          if (error.code === "permission-denied") {
+            setupBox.style.display = "block";
+            uidValue.textContent = currentUser?.uid || "";
+          } else {
+            setupBox.style.display = "none";
+            authStatus.textContent = "Firestore-yhteys epäonnistui.";
+          }
+        }
+      );
+    }
+
+    document.querySelector("#signIn").addEventListener("click", async () => {
+      authStatus.textContent = "Kirjaudutaan…";
+
+      try {
+        await signInWithPopup(auth, provider);
+      } catch (error) {
+        console.error(error);
+
+        if (
+          error.code === "auth/popup-blocked" ||
+          error.code === "auth/cancelled-popup-request"
+        ) {
+          await signInWithRedirect(auth, provider);
+        } else {
+          authStatus.textContent = "Google-kirjautuminen epäonnistui.";
+        }
+      }
+    });
+
+    document.querySelector("#signOut").addEventListener("click", () => {
+      signOut(auth);
+    });
+
+    document.querySelector("#copyUid").addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(uidValue.textContent);
+      } catch {
+        // UID remains visible for manual copying.
+      }
+    });
+
+    document.querySelector("#addExercise").addEventListener("click", addExercise);
+
+    exerciseInput.addEventListener("keydown", event => {
+      if (event.key === "Enter") addExercise();
+    });
+
+    exerciseInput.addEventListener("input", renderExercises);
+
+    onAuthStateChanged(auth, user => {
+      currentUser = user;
+
+      if (!user) {
+        if (unsubscribeExercises) {
+          unsubscribeExercises();
+          unsubscribeExercises = null;
+        }
+
+        exercises = [];
+        signedOut.hidden = false;
+        signedIn.hidden = true;
+        registry.style.display = "none";
+        setupBox.style.display = "none";
+        authStatus.textContent = "";
+        return;
+      }
+
+      signedOut.hidden = true;
+      signedIn.hidden = false;
+      accountEmail.textContent = user.email || "Google-käyttäjä";
+      uidValue.textContent = user.uid;
+      startExerciseListener();
+    });
+  </script>
+</body>
+</html>
