@@ -544,6 +544,14 @@
       }
     }
 
+
+    .history-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      justify-content: flex-end;
+    }
+
     [hidden] { display: none !important; }
 
     @media (max-width: 640px) {
@@ -586,7 +594,7 @@
 
     <section id="signedOut" class="card auth-card">
       <h2>Kirjaudu sisään</h2>
-      <p>Treeni- ja liiketiedot eivät ole näkyvissä ilman Google-kirjautumista.</p>
+      <p>Treeni- ja liiketiedot ovat käyttäjäkohtaisia eivätkä näy ilman hyväksyttyä Google-kirjautumista.</p>
       <button id="signIn" class="primary" type="button">Kirjaudu Googlella</button>
       <div id="authStatus" class="status"></div>
     </section>
@@ -607,8 +615,8 @@
       </div>
 
       <div id="setupBox" class="setup">
-        <strong>Firestore ei vielä salli tätä käyttäjää.</strong>
-        <p>Firebase UID:</p>
+        <strong>Tällä Google-käyttäjällä ei ole vielä käyttöoikeutta.</strong>
+        <p>Anna tämä Firebase UID ylläpitäjälle hyväksymistä varten:</p>
         <code id="uidValue" class="uid"></code>
       </div>
 
@@ -811,6 +819,86 @@
         .toLocaleLowerCase("fi-FI");
     }
 
+
+    function userExercisesCollection() {
+      return collection(db, "gymUsers", currentUser.uid, "exercises");
+    }
+
+    function userExerciseDoc(exerciseId) {
+      return doc(db, "gymUsers", currentUser.uid, "exercises", exerciseId);
+    }
+
+    function userWorkoutsCollection() {
+      return collection(db, "gymUsers", currentUser.uid, "workouts");
+    }
+
+    function userWorkoutDoc(workoutId) {
+      return doc(db, "gymUsers", currentUser.uid, "workouts", workoutId);
+    }
+
+    async function migrateLegacyDataIfNeeded() {
+      if (!currentUser) return false;
+
+      try {
+        const ownExerciseCheck = await getDocs(
+          query(userExercisesCollection(), limit(1))
+        );
+
+        const ownWorkoutCheck = await getDocs(
+          query(userWorkoutsCollection(), limit(1))
+        );
+
+        if (!ownExerciseCheck.empty || !ownWorkoutCheck.empty) {
+          return false;
+        }
+
+        // Vanhat Phase 1-4 -tiedot olivat näissä juurikokoelmissa.
+        // Uudet Firestore-säännöt sallivat legacy-lukemisen vain omistajalle.
+        const legacyExercises = await getDocs(collection(db, "gymExercises"));
+        const legacyWorkouts = await getDocs(collection(db, "gymWorkouts"));
+
+        if (legacyExercises.empty && legacyWorkouts.empty) {
+          return false;
+        }
+
+        const operations = [];
+
+        legacyExercises.forEach(snapshot => {
+          operations.push({
+            ref: userExerciseDoc(snapshot.id),
+            data: snapshot.data()
+          });
+        });
+
+        legacyWorkouts.forEach(snapshot => {
+          operations.push({
+            ref: userWorkoutDoc(snapshot.id),
+            data: snapshot.data()
+          });
+        });
+
+        // Firestore write batch supports up to 500 operations.
+        for (let start = 0; start < operations.length; start += 450) {
+          const batch = writeBatch(db);
+
+          operations.slice(start, start + 450).forEach(operation => {
+            batch.set(operation.ref, operation.data);
+          });
+
+          await batch.commit();
+        }
+
+        return true;
+      } catch (error) {
+        // Muilla hyväksytyillä käyttäjillä legacy-kokoelmiin ei ole oikeutta.
+        // Se on tarkoituksellista; heidän rekisterinsä alustetaan normaalisti.
+        if (error?.code !== "permission-denied") {
+          console.error("Legacy migration:", error);
+        }
+        return false;
+      }
+    }
+
     function setStatus(el, text, type = "") {
       el.textContent = text;
       el.className = `status ${type}`.trim();
@@ -889,7 +977,7 @@
       const batch = writeBatch(db);
 
       initialExercises.forEach(name => {
-        const ref = doc(collection(db, "gymExercises"));
+        const ref = doc(userExercisesCollection());
         batch.set(ref, {
           name,
           normalizedName: normalizeName(name),
@@ -903,7 +991,7 @@
     function startExerciseListener() {
       if (unsubscribeExercises) unsubscribeExercises();
 
-      const q = query(collection(db, "gymExercises"), orderBy("name"));
+      const q = query(userExercisesCollection(), orderBy("name"));
 
       unsubscribeExercises = onSnapshot(
         q,
@@ -947,7 +1035,7 @@
       setStatus(workoutStatus, "Ladataan…");
 
       try {
-        const snapshot = await getDoc(doc(db, "gymWorkouts", date));
+        const snapshot = await getDoc(userWorkoutDoc(date));
 
         if (snapshot.exists()) {
           const data = snapshot.data();
@@ -993,7 +1081,7 @@
 
         try {
           await setDoc(
-            doc(db, "gymWorkouts", currentWorkout.date),
+            userWorkoutDoc(currentWorkout.date),
             workoutPayload()
           );
           setStatus(workoutStatus, "✓ Tallennettu", "ok");
@@ -1010,7 +1098,7 @@
 
       try {
         const q = query(
-          collection(db, "gymWorkouts"),
+          userWorkoutsCollection(),
           where("exerciseIds", "array-contains", exerciseId)
         );
 
@@ -1106,7 +1194,7 @@
       if (unsubscribeHistory) unsubscribeHistory();
 
       const historyQuery = query(
-        collection(db, "gymWorkouts"),
+        userWorkoutsCollection(),
         orderBy("date", "desc")
       );
 
@@ -1120,7 +1208,10 @@
           renderHistory();
           renderProgressButtons();
           renderProgress();
-          setStatus(historyStatus, workoutHistory.length ? "" : "Ei vielä tallennettuja treenejä.");
+          const visibleCount = workoutHistory.filter(workout =>
+            Array.isArray(workout.exercises) && workout.exercises.length > 0
+          ).length;
+          setStatus(historyStatus, visibleCount ? "" : "Ei vielä tallennettuja treenejä.");
         },
         error => {
           console.error(error);
@@ -1133,10 +1224,47 @@
       );
     }
 
+
+    async function deleteWorkout(workout) {
+      const date = workout.date || workout.id;
+
+      if (!window.confirm(`Haluatko varmasti poistaa treenin ${formatDateFi(date)}?`)) {
+        return;
+      }
+
+      setStatus(historyStatus, "Poistetaan treeni…");
+
+      try {
+        if (currentWorkout?.date === date) {
+          clearTimeout(saveTimer);
+        }
+
+        await deleteDoc(userWorkoutDoc(date));
+
+        if (currentWorkout?.date === date) {
+          currentWorkout = {
+            date,
+            exercises: []
+          };
+          renderWorkout();
+          setStatus(workoutStatus, "Treeni poistettu.", "ok");
+        }
+
+        setStatus(historyStatus, "Treeni poistettu.", "ok");
+      } catch (error) {
+        console.error(error);
+        setStatus(historyStatus, "Treenin poistaminen epäonnistui.", "error");
+      }
+    }
+
     function renderHistory() {
       historyList.replaceChildren();
 
-      if (workoutHistory.length === 0) {
+      const visibleHistory = workoutHistory.filter(workout =>
+        Array.isArray(workout.exercises) && workout.exercises.length > 0
+      );
+
+      if (visibleHistory.length === 0) {
         const empty = document.createElement("div");
         empty.className = "card empty";
         empty.textContent = "Ei vielä tallennettuja treenejä.";
@@ -1144,7 +1272,7 @@
         return;
       }
 
-      workoutHistory.forEach(workout => {
+      visibleHistory.forEach(workout => {
         const card = document.createElement("article");
         card.className = "card history-card";
 
@@ -1154,6 +1282,9 @@
         const date = document.createElement("h3");
         date.className = "history-date";
         date.textContent = formatDateFi(workout.date || workout.id);
+
+        const actions = document.createElement("div");
+        actions.className = "history-actions";
 
         const openButton = document.createElement("button");
         openButton.type = "button";
@@ -1166,7 +1297,14 @@
           window.scrollTo({ top: 0, behavior: "smooth" });
         });
 
-        header.append(date, openButton);
+        const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.className = "danger";
+        deleteButton.textContent = "Poista treeni";
+        deleteButton.addEventListener("click", () => deleteWorkout(workout));
+
+        actions.append(openButton, deleteButton);
+        header.append(date, actions);
 
         const exercisesWrap = document.createElement("div");
         exercisesWrap.className = "history-exercises";
@@ -1705,7 +1843,7 @@
       }
 
       try {
-        await addDoc(collection(db, "gymExercises"), {
+        await addDoc(userExercisesCollection(), {
           name,
           normalizedName,
           createdAt: serverTimestamp()
@@ -1736,7 +1874,7 @@
       }
 
       try {
-        await updateDoc(doc(db, "gymExercises", exercise.id), {
+        await updateDoc(userExerciseDoc(exercise.id), {
           name,
           normalizedName,
           updatedAt: serverTimestamp()
@@ -1753,7 +1891,7 @@
 
       try {
         const q = query(
-          collection(db, "gymWorkouts"),
+          userWorkoutsCollection(),
           where("exerciseIds", "array-contains", exercise.id),
           limit(1)
         );
@@ -1771,7 +1909,7 @@
 
         if (!window.confirm(`Poistetaanko liike "${exercise.name}"?`)) return;
 
-        await deleteDoc(doc(db, "gymExercises", exercise.id));
+        await deleteDoc(userExerciseDoc(exercise.id));
         setStatus(registryStatus, "Liike poistettu.", "ok");
       } catch (error) {
         console.error(error);
@@ -1852,9 +1990,16 @@
       uidValue.textContent = user.uid;
 
       resetInactivityTimer();
+
+      const migrated = await migrateLegacyDataIfNeeded();
+
       startExerciseListener();
       startHistoryListener();
       await loadWorkout();
+
+      if (migrated) {
+        setStatus(workoutStatus, "Vanhat treenit siirretty käyttäjäkohtaiseen päiväkirjaan.", "ok");
+      }
     });
   </script>
 </body>
