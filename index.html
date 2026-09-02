@@ -7,11 +7,12 @@
   <style>
     :root {
       --bg: #f4f6fa;
-      --card: #fff;
+      --card: #ffffff;
       --text: #172033;
       --muted: #667085;
       --border: #dfe5ee;
       --accent: #3157d5;
+      --accent-soft: rgba(49,87,213,.10);
       --danger: #b42318;
       --ok: #177245;
       --shadow: 0 12px 34px rgba(31,46,87,.08);
@@ -28,9 +29,9 @@
     }
 
     main {
-      width: min(820px, calc(100% - 28px));
+      width: min(900px, calc(100% - 28px));
       margin: 0 auto;
-      padding: 28px 0 56px;
+      padding: 24px 0 56px;
     }
 
     h1 {
@@ -40,10 +41,10 @@
       line-height: 1;
     }
 
-    h2 { margin-top: 0; }
+    h2, h3 { margin-top: 0; }
 
     .subtitle {
-      margin: 10px 0 24px;
+      margin: 9px 0 20px;
       color: var(--muted);
     }
 
@@ -59,19 +60,22 @@
       padding: 24px;
     }
 
-    button, input {
+    button, input, textarea {
       font: inherit;
     }
 
-    button {
-      cursor: pointer;
+    button { cursor: pointer; }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: .48;
     }
 
     .primary {
-      min-height: 48px;
-      padding: 0 17px;
+      min-height: 46px;
+      padding: 0 16px;
       border: 0;
-      border-radius: 13px;
+      border-radius: 12px;
       color: #fff;
       background: var(--accent);
       font-weight: 800;
@@ -93,29 +97,253 @@
       align-items: flex-start;
       justify-content: space-between;
       gap: 16px;
-      margin-bottom: 20px;
+      margin-bottom: 14px;
     }
 
     .account {
       text-align: right;
       color: var(--muted);
-      font-size: .88rem;
+      font-size: .86rem;
     }
 
     .account strong {
       display: block;
+      margin-bottom: 6px;
       color: var(--text);
     }
 
     .status {
       min-height: 1.3em;
-      margin: 10px 0 16px;
+      margin: 8px 0 14px;
       color: var(--muted);
-      font-size: .9rem;
+      font-size: .88rem;
     }
 
     .status.ok { color: var(--ok); }
     .status.error { color: var(--danger); }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .tab {
+      min-height: 46px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      background: var(--card);
+      font-weight: 800;
+    }
+
+    .tab.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .toolbar-card {
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+
+    .date-row {
+      display: flex;
+      align-items: end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    label {
+      display: block;
+      color: var(--muted);
+      font-size: .86rem;
+      font-weight: 700;
+    }
+
+    input[type="date"],
+    input[type="text"],
+    textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      background: var(--card);
+      outline: none;
+    }
+
+    input[type="date"],
+    input[type="text"] {
+      min-height: 46px;
+      padding: 0 13px;
+    }
+
+    textarea {
+      min-height: 78px;
+      padding: 11px 13px;
+      resize: vertical;
+    }
+
+    input:focus, textarea:focus {
+      border-color: var(--accent);
+    }
+
+    .date-field {
+      width: min(260px, 100%);
+    }
+
+    .search-wrap {
+      position: relative;
+      margin-top: 14px;
+    }
+
+    .suggestions {
+      position: absolute;
+      z-index: 20;
+      left: 0;
+      right: 0;
+      top: calc(100% + 6px);
+      max-height: 280px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: var(--card);
+      box-shadow: var(--shadow);
+    }
+
+    .suggestion {
+      display: block;
+      width: 100%;
+      padding: 12px 14px;
+      border: 0;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      color: var(--text);
+      background: transparent;
+      font-weight: 750;
+    }
+
+    .suggestion:last-child { border-bottom: 0; }
+    .suggestion:hover { background: var(--accent-soft); }
+
+    .workout-list, .exercise-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .workout-card {
+      padding: 17px;
+    }
+
+    .workout-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .workout-card h3 {
+      margin: 0;
+      font-size: 1.12rem;
+    }
+
+    .previous {
+      margin-bottom: 14px;
+      padding: 11px 12px;
+      border-radius: 12px;
+      background: var(--accent-soft);
+      color: var(--muted);
+      font-size: .88rem;
+      line-height: 1.45;
+    }
+
+    .previous strong { color: var(--text); }
+
+    .fields {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .field input {
+      margin-top: 6px;
+    }
+
+    .checks {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .check-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text);
+      font-size: .96rem;
+      cursor: pointer;
+    }
+
+    .check-row input {
+      width: 20px;
+      height: 20px;
+      accent-color: var(--accent);
+    }
+
+    .note-field { margin-top: 14px; }
+
+    .validation {
+      min-height: 1.2em;
+      margin-top: 8px;
+      color: var(--danger);
+      font-size: .82rem;
+    }
+
+    .empty {
+      padding: 24px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .registry-tools {
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+
+    .add-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+    }
+
+    .hint {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: .88rem;
+      line-height: 1.5;
+    }
+
+    .exercise-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 15px 16px;
+    }
+
+    .exercise-name { font-weight: 800; }
+
+    .actions {
+      display: flex;
+      flex: 0 0 auto;
+      gap: 7px;
+    }
 
     .setup {
       display: none;
@@ -136,71 +364,9 @@
       font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     }
 
-    .registry {
-      display: none;
-    }
-
-    .add-row {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 10px;
-      margin: 16px 0 10px;
-    }
-
-    input[type="text"] {
-      width: 100%;
-      min-height: 48px;
-      padding: 0 14px;
-      border: 1px solid var(--border);
-      border-radius: 13px;
-      color: var(--text);
-      background: var(--card);
-      outline: none;
-    }
-
-    input[type="text"]:focus {
-      border-color: var(--accent);
-    }
-
-    .hint {
-      margin: 0 0 18px;
-      color: var(--muted);
-      font-size: .9rem;
-      line-height: 1.5;
-    }
-
-    .exercise-list {
-      display: grid;
-      gap: 10px;
-    }
-
-    .exercise-card {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 14px;
-      padding: 15px 16px;
-    }
-
-    .exercise-name {
-      font-weight: 800;
-    }
-
-    .actions {
-      display: flex;
-      flex: 0 0 auto;
-      gap: 7px;
-    }
-
-    .empty {
-      padding: 22px;
-      color: var(--muted);
-      text-align: center;
-    }
-
     [hidden] { display: none !important; }
 
-    @media (max-width: 600px) {
+    @media (max-width: 640px) {
       .header-row {
         display: block;
       }
@@ -208,6 +374,10 @@
       .account {
         margin-top: 14px;
         text-align: left;
+      }
+
+      .fields {
+        grid-template-columns: 1fr;
       }
 
       .add-row {
@@ -232,7 +402,7 @@
 <body>
   <main>
     <h1>Punttipäiväkirja</h1>
-    <p class="subtitle">Vaihe 1 · Liikerekisteri</p>
+    <p class="subtitle">Treeni tallentuu automaattisesti.</p>
 
     <section id="signedOut" class="card auth-card">
       <h2>Kirjaudu sisään</h2>
@@ -243,9 +413,9 @@
 
     <section id="signedIn" hidden>
       <div class="header-row">
-        <div>
-          <h2>Liikerekisteri</h2>
-          <p class="subtitle">Liikkeet valitaan myöhemmin treeneihin tästä rekisteristä.</p>
+        <div class="tabs">
+          <button class="tab active" data-tab="workout" type="button">Treeni</button>
+          <button class="tab" data-tab="registry" type="button">Liikkeet</button>
         </div>
 
         <div class="account">
@@ -255,24 +425,49 @@
       </div>
 
       <div id="setupBox" class="setup">
-        <strong>Kirjautuminen toimii, mutta Firestore ei vielä salli tätä käyttäjää.</strong>
-        <p>Kopioi alla oleva Firebase UID ja vaihda se Firestore Rules -tiedoston kohtaan <code>OWNER_UID_TAHAN</code>.</p>
+        <strong>Firestore ei vielä salli tätä käyttäjää.</strong>
+        <p>Firebase UID:</p>
         <code id="uidValue" class="uid"></code>
-        <button id="copyUid" class="secondary" type="button">Kopioi UID</button>
       </div>
 
-      <section id="registry" class="registry">
-        <div class="add-row">
-          <input id="exerciseInput" type="text" placeholder="Kirjoita liikkeen nimi…" autocomplete="off">
-          <button id="addExercise" class="primary" type="button">Lisää liike</button>
+      <section id="workoutPanel" class="panel active">
+        <div class="card toolbar-card">
+          <div class="date-row">
+            <div class="date-field">
+              <label for="workoutDate">Treeni-päivä</label>
+              <input id="workoutDate" type="date">
+            </div>
+          </div>
+
+          <div class="search-wrap">
+            <label for="exerciseSearch">Lisää liike treeniin</label>
+            <input
+              id="exerciseSearch"
+              type="text"
+              placeholder="Ala kirjoittaa liikkeen nimeä…"
+              autocomplete="off"
+            >
+            <div id="suggestions" class="suggestions" hidden></div>
+          </div>
+
+          <div id="workoutStatus" class="status"></div>
         </div>
 
-        <p class="hint">
-          Haku suodattaa olemassa olevia liikkeitä samalla kun kirjoitat.
-          Jos nimeä ei löydy, voit lisätä sen uutena.
-        </p>
+        <div id="workoutList" class="workout-list"></div>
+      </section>
 
-        <div id="registryStatus" class="status"></div>
+      <section id="registryPanel" class="panel">
+        <div class="card registry-tools">
+          <div class="add-row">
+            <input id="registryInput" type="text" placeholder="Kirjoita liikkeen nimi…" autocomplete="off">
+            <button id="addExercise" class="primary" type="button">Lisää liike</button>
+          </div>
+          <p class="hint">
+            Kirjoittaminen suodattaa rekisteriä. Liikkeen voi poistaa vain, jos sillä ei ole treenihistoriaa.
+          </p>
+          <div id="registryStatus" class="status"></div>
+        </div>
+
         <div id="exerciseList" class="exercise-list"></div>
       </section>
     </section>
@@ -284,22 +479,27 @@
       getAuth,
       GoogleAuthProvider,
       onAuthStateChanged,
+      setPersistence,
+      browserLocalPersistence,
       signInWithPopup,
       signInWithRedirect,
       signOut
     } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+
     import {
       getFirestore,
       collection,
       addDoc,
       deleteDoc,
       doc,
+      getDoc,
       getDocs,
       limit,
       onSnapshot,
       orderBy,
       query,
       serverTimestamp,
+      setDoc,
       updateDoc,
       where,
       writeBatch
@@ -335,21 +535,42 @@
     const db = getFirestore(app);
     const provider = new GoogleAuthProvider();
 
+    await setPersistence(auth, browserLocalPersistence);
+
     const signedOut = document.querySelector("#signedOut");
     const signedIn = document.querySelector("#signedIn");
     const authStatus = document.querySelector("#authStatus");
     const accountEmail = document.querySelector("#accountEmail");
     const setupBox = document.querySelector("#setupBox");
     const uidValue = document.querySelector("#uidValue");
-    const registry = document.querySelector("#registry");
+
+    const workoutDate = document.querySelector("#workoutDate");
+    const exerciseSearch = document.querySelector("#exerciseSearch");
+    const suggestions = document.querySelector("#suggestions");
+    const workoutStatus = document.querySelector("#workoutStatus");
+    const workoutList = document.querySelector("#workoutList");
+
+    const registryInput = document.querySelector("#registryInput");
     const registryStatus = document.querySelector("#registryStatus");
-    const exerciseInput = document.querySelector("#exerciseInput");
     const exerciseList = document.querySelector("#exerciseList");
 
-    let exercises = [];
-    let unsubscribeExercises = null;
     let currentUser = null;
+    let exercises = [];
+    let currentWorkout = null;
+    let unsubscribeExercises = null;
+    let saveTimer = null;
+    let inactivityTimer = null;
     let seeded = false;
+    const previousCache = new Map();
+
+    function todayLocal() {
+      const now = new Date();
+      const offset = now.getTimezoneOffset();
+      const local = new Date(now.getTime() - offset * 60000);
+      return local.toISOString().slice(0, 10);
+    }
+
+    workoutDate.value = todayLocal();
 
     function normalizeName(value) {
       return value
@@ -358,10 +579,46 @@
         .toLocaleLowerCase("fi-FI");
     }
 
-    function setRegistryStatus(text, type = "") {
-      registryStatus.textContent = text;
-      registryStatus.className = `status ${type}`.trim();
+    function setStatus(el, text, type = "") {
+      el.textContent = text;
+      el.className = `status ${type}`.trim();
     }
+
+    function parseWeight(value) {
+      const trimmed = String(value).trim();
+      if (trimmed === "") return null;
+
+      const number = Number(trimmed.replace(",", "."));
+      if (!Number.isFinite(number) || number < 0) return NaN;
+      return number;
+    }
+
+    function parseWhole(value) {
+      const trimmed = String(value).trim();
+      if (trimmed === "") return null;
+
+      const number = Number(trimmed);
+      if (!Number.isInteger(number) || number < 0) return NaN;
+      return number;
+    }
+
+    function formatNumber(value) {
+      if (value === null || value === undefined) return "—";
+      return String(value).replace(".", ",");
+    }
+
+    function resetInactivityTimer() {
+      if (!currentUser) return;
+      clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(async () => {
+        await signOut(auth);
+        window.alert("Sinut kirjattiin ulos 30 minuutin käyttämättömyyden jälkeen.");
+      }, 30 * 60 * 1000);
+    }
+
+    ["click", "keydown", "touchstart", "input"].forEach(eventName => {
+      document.addEventListener(eventName, resetInactivityTimer, { passive: true });
+    });
 
     async function seedExercisesIfNeeded() {
       if (seeded || exercises.length > 0) return;
@@ -381,8 +638,411 @@
       await batch.commit();
     }
 
-    function renderExercises() {
-      const search = normalizeName(exerciseInput.value);
+    function startExerciseListener() {
+      if (unsubscribeExercises) unsubscribeExercises();
+
+      const q = query(collection(db, "gymExercises"), orderBy("name"));
+
+      unsubscribeExercises = onSnapshot(
+        q,
+        async snapshot => {
+          exercises = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+          setupBox.style.display = "none";
+
+          renderRegistry();
+          renderSuggestions();
+
+          if (exercises.length === 0) {
+            try {
+              await seedExercisesIfNeeded();
+            } catch (error) {
+              console.error(error);
+              setStatus(registryStatus, "Aloitusliikkeiden lisääminen epäonnistui.", "error");
+            }
+          }
+        },
+        error => {
+          console.error(error);
+          if (error.code === "permission-denied") {
+            setupBox.style.display = "block";
+            uidValue.textContent = currentUser?.uid || "";
+          }
+        }
+      );
+    }
+
+    async function loadWorkout() {
+      if (!currentUser) return;
+
+      clearTimeout(saveTimer);
+      previousCache.clear();
+      const date = workoutDate.value;
+
+      if (!date) return;
+
+      setStatus(workoutStatus, "Ladataan…");
+
+      try {
+        const snapshot = await getDoc(doc(db, "gymWorkouts", date));
+
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          currentWorkout = {
+            date,
+            exercises: Array.isArray(data.exercises) ? data.exercises : []
+          };
+          setStatus(workoutStatus, "Treeni ladattu.", "ok");
+        } else {
+          currentWorkout = {
+            date,
+            exercises: []
+          };
+          setStatus(workoutStatus, "Uusi treeni.", "");
+        }
+
+        renderWorkout();
+      } catch (error) {
+        console.error(error);
+        currentWorkout = null;
+        setStatus(workoutStatus, "Treenin lataaminen epäonnistui.", "error");
+        renderWorkout();
+      }
+    }
+
+    function workoutPayload() {
+      const items = currentWorkout?.exercises || [];
+      return {
+        date: currentWorkout.date,
+        exerciseIds: items.map(item => item.exerciseId),
+        exercises: items,
+        updatedAt: serverTimestamp()
+      };
+    }
+
+    function scheduleSave() {
+      clearTimeout(saveTimer);
+
+      saveTimer = setTimeout(async () => {
+        if (!currentWorkout || !currentUser) return;
+
+        setStatus(workoutStatus, "Tallennetaan…");
+
+        try {
+          await setDoc(
+            doc(db, "gymWorkouts", currentWorkout.date),
+            workoutPayload()
+          );
+          setStatus(workoutStatus, "✓ Tallennettu", "ok");
+        } catch (error) {
+          console.error(error);
+          setStatus(workoutStatus, "Tallennus epäonnistui.", "error");
+        }
+      }, 450);
+    }
+
+    async function getPreviousExerciseEntry(exerciseId, beforeDate) {
+      const key = `${exerciseId}|${beforeDate}`;
+      if (previousCache.has(key)) return previousCache.get(key);
+
+      try {
+        const q = query(
+          collection(db, "gymWorkouts"),
+          where("exerciseIds", "array-contains", exerciseId)
+        );
+
+        const snapshot = await getDocs(q);
+
+        const candidates = snapshot.docs
+          .map(d => d.data())
+          .filter(data => data.date && data.date < beforeDate)
+          .sort((a, b) => b.date.localeCompare(a.date));
+
+        let result = null;
+
+        for (const workout of candidates) {
+          const entry = Array.isArray(workout.exercises)
+            ? workout.exercises.find(item => item.exerciseId === exerciseId)
+            : null;
+
+          if (entry) {
+            result = { date: workout.date, ...entry };
+            break;
+          }
+        }
+
+        previousCache.set(key, result);
+        return result;
+      } catch (error) {
+        console.error(error);
+        return null;
+      }
+    }
+
+    async function addExerciseToWorkout(exercise) {
+      if (!currentWorkout) return;
+
+      if (currentWorkout.exercises.some(item => item.exerciseId === exercise.id)) {
+        setStatus(workoutStatus, "Liike on jo tämän päivän treenissä.", "error");
+        return;
+      }
+
+      currentWorkout.exercises.push({
+        exerciseId: exercise.id,
+        exerciseName: exercise.name,
+        weight: null,
+        sets: null,
+        reps: null,
+        targetReached: false,
+        increaseNextTime: false,
+        note: ""
+      });
+
+      exerciseSearch.value = "";
+      suggestions.hidden = true;
+      renderWorkout();
+      scheduleSave();
+    }
+
+    function updateWorkoutEntry(index, patch) {
+      if (!currentWorkout?.exercises[index]) return;
+
+      currentWorkout.exercises[index] = {
+        ...currentWorkout.exercises[index],
+        ...patch
+      };
+      scheduleSave();
+    }
+
+    function removeWorkoutEntry(index) {
+      if (!currentWorkout?.exercises[index]) return;
+
+      const item = currentWorkout.exercises[index];
+      const confirmed = window.confirm(`Poistetaanko "${item.exerciseName}" tästä treenistä?`);
+      if (!confirmed) return;
+
+      currentWorkout.exercises.splice(index, 1);
+      renderWorkout();
+      scheduleSave();
+    }
+
+    function renderWorkout() {
+      workoutList.replaceChildren();
+
+      if (!currentWorkout) {
+        const empty = document.createElement("div");
+        empty.className = "card empty";
+        empty.textContent = "Treeniä ei voitu ladata.";
+        workoutList.append(empty);
+        return;
+      }
+
+      if (currentWorkout.exercises.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "card empty";
+        empty.textContent = "Ei vielä liikkeitä. Lisää ensimmäinen liike yllä olevasta hausta.";
+        workoutList.append(empty);
+        return;
+      }
+
+      currentWorkout.exercises.forEach((item, index) => {
+        const card = document.createElement("article");
+        card.className = "card workout-card";
+
+        const header = document.createElement("div");
+        header.className = "workout-card-header";
+
+        const title = document.createElement("h3");
+        title.textContent = item.exerciseName;
+
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "danger";
+        remove.textContent = "Poista treenistä";
+        remove.addEventListener("click", () => removeWorkoutEntry(index));
+
+        header.append(title, remove);
+
+        const previous = document.createElement("div");
+        previous.className = "previous";
+        previous.innerHTML = "<strong>Edellinen kerta:</strong> haetaan…";
+
+        getPreviousExerciseEntry(item.exerciseId, currentWorkout.date).then(prev => {
+          if (!prev) {
+            previous.innerHTML = "<strong>Edellinen kerta:</strong> ei aiempaa merkintää.";
+            return;
+          }
+
+          const flags = [
+            prev.targetReached ? "✓ tavoite saavutettu" : "",
+            prev.increaseNextTime ? "↑ lisää painoa ensi kerralla" : ""
+          ].filter(Boolean).join(" · ");
+
+          previous.innerHTML =
+            `<strong>Edellinen kerta ${prev.date}:</strong> ` +
+            `${formatNumber(prev.weight)} kg · ${formatNumber(prev.sets)} × ${formatNumber(prev.reps)}` +
+            (flags ? `<br>${flags}` : "");
+        });
+
+        const fields = document.createElement("div");
+        fields.className = "fields";
+
+        const weightField = createNumericField(
+          "Paino (kg)",
+          item.weight,
+          "decimal",
+          value => {
+            const parsed = parseWeight(value);
+            if (Number.isNaN(parsed)) return "Painon tulee olla 0 tai suurempi luku.";
+            updateWorkoutEntry(index, { weight: parsed });
+            return "";
+          }
+        );
+
+        const setsField = createNumericField(
+          "Sarjat",
+          item.sets,
+          "numeric",
+          value => {
+            const parsed = parseWhole(value);
+            if (Number.isNaN(parsed)) return "Sarjojen tulee olla kokonaisluku 0 tai suurempi.";
+            updateWorkoutEntry(index, { sets: parsed });
+            return "";
+          }
+        );
+
+        const repsField = createNumericField(
+          "Toistot / sarja",
+          item.reps,
+          "numeric",
+          value => {
+            const parsed = parseWhole(value);
+            if (Number.isNaN(parsed)) return "Toistojen tulee olla kokonaisluku 0 tai suurempi.";
+            updateWorkoutEntry(index, { reps: parsed });
+            return "";
+          }
+        );
+
+        fields.append(weightField, setsField, repsField);
+
+        const checks = document.createElement("div");
+        checks.className = "checks";
+
+        const targetCheck = createCheckbox(
+          "Tavoite saavutettu",
+          !!item.targetReached,
+          checked => updateWorkoutEntry(index, { targetReached: checked })
+        );
+
+        const increaseCheck = createCheckbox(
+          "Lisätään painoa ensi kerralla",
+          !!item.increaseNextTime,
+          checked => updateWorkoutEntry(index, { increaseNextTime: checked })
+        );
+
+        checks.append(targetCheck, increaseCheck);
+
+        const noteField = document.createElement("div");
+        noteField.className = "note-field";
+
+        const noteLabel = document.createElement("label");
+        noteLabel.textContent = "Muistiinpano";
+
+        const note = document.createElement("textarea");
+        note.placeholder = "Valinnainen";
+        note.value = item.note || "";
+        note.addEventListener("input", () => {
+          updateWorkoutEntry(index, { note: note.value });
+        });
+
+        noteField.append(noteLabel, note);
+
+        card.append(header, previous, fields, checks, noteField);
+        workoutList.append(card);
+      });
+    }
+
+    function createNumericField(labelText, value, inputMode, onValue) {
+      const wrapper = document.createElement("div");
+      wrapper.className = "field";
+
+      const label = document.createElement("label");
+      label.textContent = labelText;
+
+      const input = document.createElement("input");
+      input.type = "text";
+      input.inputMode = inputMode;
+      input.value = value === null || value === undefined ? "" : formatNumber(value);
+
+      const validation = document.createElement("div");
+      validation.className = "validation";
+
+      input.addEventListener("input", () => {
+        validation.textContent = onValue(input.value);
+      });
+
+      wrapper.append(label, input, validation);
+      return wrapper;
+    }
+
+    function createCheckbox(text, checked, onChange) {
+      const label = document.createElement("label");
+      label.className = "check-row";
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.checked = checked;
+      checkbox.addEventListener("change", () => onChange(checkbox.checked));
+
+      const span = document.createElement("span");
+      span.textContent = text;
+
+      label.append(checkbox, span);
+      return label;
+    }
+
+    function renderSuggestions() {
+      const search = normalizeName(exerciseSearch.value);
+
+      if (!search) {
+        suggestions.hidden = true;
+        suggestions.replaceChildren();
+        return;
+      }
+
+      const inWorkout = new Set(
+        (currentWorkout?.exercises || []).map(item => item.exerciseId)
+      );
+
+      const matches = exercises
+        .filter(ex => ex.normalizedName.includes(search))
+        .filter(ex => !inWorkout.has(ex.id))
+        .slice(0, 8);
+
+      suggestions.replaceChildren();
+
+      if (matches.length === 0) {
+        const row = document.createElement("div");
+        row.className = "suggestion";
+        row.textContent = "Ei osumia liikerekisterissä.";
+        suggestions.append(row);
+        suggestions.hidden = false;
+        return;
+      }
+
+      matches.forEach(exercise => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "suggestion";
+        button.textContent = exercise.name;
+        button.addEventListener("click", () => addExerciseToWorkout(exercise));
+        suggestions.append(button);
+      });
+
+      suggestions.hidden = false;
+    }
+
+    function renderRegistry() {
+      const search = normalizeName(registryInput.value);
       const filtered = search
         ? exercises.filter(ex => ex.normalizedName.includes(search))
         : exercises;
@@ -428,17 +1088,17 @@
       });
     }
 
-    async function addExercise() {
-      const name = exerciseInput.value.trim().replace(/\s+/g, " ");
+    async function addRegistryExercise() {
+      const name = registryInput.value.trim().replace(/\s+/g, " ");
       const normalizedName = normalizeName(name);
 
       if (!name) {
-        setRegistryStatus("Kirjoita liikkeen nimi.", "error");
+        setStatus(registryStatus, "Kirjoita liikkeen nimi.", "error");
         return;
       }
 
       if (exercises.some(ex => ex.normalizedName === normalizedName)) {
-        setRegistryStatus("Liike löytyy jo rekisteristä.", "error");
+        setStatus(registryStatus, "Liike löytyy jo rekisteristä.", "error");
         return;
       }
 
@@ -448,12 +1108,11 @@
           normalizedName,
           createdAt: serverTimestamp()
         });
-
-        exerciseInput.value = "";
-        setRegistryStatus("Liike lisätty.", "ok");
+        registryInput.value = "";
+        setStatus(registryStatus, "Liike lisätty.", "ok");
       } catch (error) {
         console.error(error);
-        setRegistryStatus("Liikkeen lisääminen epäonnistui.", "error");
+        setStatus(registryStatus, "Liikkeen lisääminen epäonnistui.", "error");
       }
     }
 
@@ -465,16 +1124,12 @@
       const normalizedName = normalizeName(name);
 
       if (!name) {
-        setRegistryStatus("Liikkeen nimi ei voi olla tyhjä.", "error");
+        setStatus(registryStatus, "Liikkeen nimi ei voi olla tyhjä.", "error");
         return;
       }
 
-      if (
-        exercises.some(
-          ex => ex.id !== exercise.id && ex.normalizedName === normalizedName
-        )
-      ) {
-        setRegistryStatus("Samanniminen liike löytyy jo rekisteristä.", "error");
+      if (exercises.some(ex => ex.id !== exercise.id && ex.normalizedName === normalizedName)) {
+        setStatus(registryStatus, "Samanniminen liike löytyy jo rekisteristä.", "error");
         return;
       }
 
@@ -484,90 +1139,76 @@
           normalizedName,
           updatedAt: serverTimestamp()
         });
-
-        setRegistryStatus("Liikkeen nimi päivitetty.", "ok");
+        setStatus(registryStatus, "Liikkeen nimi päivitetty.", "ok");
       } catch (error) {
         console.error(error);
-        setRegistryStatus("Nimen muuttaminen epäonnistui.", "error");
+        setStatus(registryStatus, "Nimen muuttaminen epäonnistui.", "error");
       }
     }
 
     async function removeExercise(exercise) {
-      setRegistryStatus("Tarkistetaan liikkeen treenihistoriaa…");
+      setStatus(registryStatus, "Tarkistetaan treenihistoriaa…");
 
       try {
-        const usedQuery = query(
+        const q = query(
           collection(db, "gymWorkouts"),
           where("exerciseIds", "array-contains", exercise.id),
           limit(1)
         );
 
-        const usedSnapshot = await getDocs(usedQuery);
+        const used = await getDocs(q);
 
-        if (!usedSnapshot.empty) {
-          setRegistryStatus(
+        if (!used.empty) {
+          setStatus(
+            registryStatus,
             "Liikettä ei voi poistaa, koska sillä on tallennettua treenihistoriaa.",
             "error"
           );
           return;
         }
 
-        const confirmed = window.confirm(
-          `Poistetaanko liike "${exercise.name}" rekisteristä?`
-        );
-        if (!confirmed) return;
+        if (!window.confirm(`Poistetaanko liike "${exercise.name}"?`)) return;
 
         await deleteDoc(doc(db, "gymExercises", exercise.id));
-        setRegistryStatus("Liike poistettu.", "ok");
+        setStatus(registryStatus, "Liike poistettu.", "ok");
       } catch (error) {
         console.error(error);
-        setRegistryStatus("Liikkeen poistamisen tarkistus epäonnistui.", "error");
+        setStatus(registryStatus, "Liikkeen poistamisen tarkistus epäonnistui.", "error");
       }
     }
 
-    function startExerciseListener() {
-      if (unsubscribeExercises) unsubscribeExercises();
+    document.querySelectorAll(".tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+        document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
 
-      const exerciseQuery = query(
-        collection(db, "gymExercises"),
-        orderBy("name")
-      );
+        tab.classList.add("active");
 
-      unsubscribeExercises = onSnapshot(
-        exerciseQuery,
-        async snapshot => {
-          exercises = snapshot.docs.map(d => ({
-            id: d.id,
-            ...d.data()
-          }));
-
-          setupBox.style.display = "none";
-          registry.style.display = "block";
-          renderExercises();
-
-          if (exercises.length === 0) {
-            try {
-              await seedExercisesIfNeeded();
-            } catch (error) {
-              console.error(error);
-              setRegistryStatus("Aloitusliikkeiden lisääminen epäonnistui.", "error");
-            }
-          }
-        },
-        error => {
-          console.error(error);
-          registry.style.display = "none";
-
-          if (error.code === "permission-denied") {
-            setupBox.style.display = "block";
-            uidValue.textContent = currentUser?.uid || "";
-          } else {
-            setupBox.style.display = "none";
-            authStatus.textContent = "Firestore-yhteys epäonnistui.";
-          }
+        if (tab.dataset.tab === "workout") {
+          document.querySelector("#workoutPanel").classList.add("active");
+        } else {
+          document.querySelector("#registryPanel").classList.add("active");
         }
-      );
-    }
+      });
+    });
+
+    workoutDate.addEventListener("change", loadWorkout);
+    exerciseSearch.addEventListener("input", renderSuggestions);
+
+    exerciseSearch.addEventListener("focus", renderSuggestions);
+
+    document.addEventListener("click", event => {
+      if (!event.target.closest(".search-wrap")) {
+        suggestions.hidden = true;
+      }
+    });
+
+    registryInput.addEventListener("input", renderRegistry);
+    registryInput.addEventListener("keydown", event => {
+      if (event.key === "Enter") addRegistryExercise();
+    });
+
+    document.querySelector("#addExercise").addEventListener("click", addRegistryExercise);
 
     document.querySelector("#signIn").addEventListener("click", async () => {
       authStatus.textContent = "Kirjaudutaan…";
@@ -583,46 +1224,28 @@
         ) {
           await signInWithRedirect(auth, provider);
         } else {
-          authStatus.textContent = "Google-kirjautuminen epäonnistui.";
+          authStatus.textContent = `Google-kirjautuminen epäonnistui: ${error.code || "tuntematon virhe"}`;
         }
       }
     });
 
-    document.querySelector("#signOut").addEventListener("click", () => {
-      signOut(auth);
-    });
+    document.querySelector("#signOut").addEventListener("click", () => signOut(auth));
 
-    document.querySelector("#copyUid").addEventListener("click", async () => {
-      try {
-        await navigator.clipboard.writeText(uidValue.textContent);
-      } catch {
-        // UID remains visible for manual copying.
-      }
-    });
-
-    document.querySelector("#addExercise").addEventListener("click", addExercise);
-
-    exerciseInput.addEventListener("keydown", event => {
-      if (event.key === "Enter") addExercise();
-    });
-
-    exerciseInput.addEventListener("input", renderExercises);
-
-    onAuthStateChanged(auth, user => {
+    onAuthStateChanged(auth, async user => {
       currentUser = user;
 
       if (!user) {
+        clearTimeout(inactivityTimer);
+
         if (unsubscribeExercises) {
           unsubscribeExercises();
           unsubscribeExercises = null;
         }
 
-        exercises = [];
         signedOut.hidden = false;
         signedIn.hidden = true;
-        registry.style.display = "none";
-        setupBox.style.display = "none";
-        authStatus.textContent = "";
+        currentWorkout = null;
+        exercises = [];
         return;
       }
 
@@ -630,7 +1253,10 @@
       signedIn.hidden = false;
       accountEmail.textContent = user.email || "Google-käyttäjä";
       uidValue.textContent = user.uid;
+
+      resetInactivityTimer();
       startExerciseListener();
+      await loadWorkout();
     });
   </script>
 </body>
