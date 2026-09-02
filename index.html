@@ -124,7 +124,7 @@
 
     .tabs {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 8px;
       margin-bottom: 16px;
     }
@@ -425,6 +425,125 @@
       white-space: pre-wrap;
     }
 
+
+    .workout-summary {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .summary-box {
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: var(--accent-soft);
+    }
+
+    .summary-label {
+      display: block;
+      color: var(--muted);
+      font-size: .8rem;
+      font-weight: 700;
+    }
+
+    .summary-value {
+      display: block;
+      margin-top: 3px;
+      font-size: 1.15rem;
+      font-weight: 900;
+    }
+
+    .history-volume {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+      color: var(--text);
+      font-weight: 800;
+    }
+
+    .progress-layout {
+      display: grid;
+      grid-template-columns: minmax(220px, 280px) 1fr;
+      gap: 14px;
+    }
+
+    .progress-exercises,
+    .progress-details {
+      padding: 16px;
+    }
+
+    .progress-buttons {
+      display: grid;
+      gap: 8px;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+
+    .progress-button {
+      min-height: 42px;
+      padding: 0 12px;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      color: var(--text);
+      background: transparent;
+      text-align: left;
+      font-weight: 750;
+    }
+
+    .progress-button.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .progress-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+    }
+
+    .progress-table th,
+    .progress-table td {
+      padding: 10px 8px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .progress-table th {
+      color: var(--muted);
+      font-size: .8rem;
+    }
+
+    .progress-note {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: .82rem;
+      white-space: pre-wrap;
+    }
+
+    @media (max-width: 700px) {
+      .tabs {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .workout-summary {
+        grid-template-columns: 1fr;
+      }
+
+      .progress-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .progress-buttons {
+        max-height: none;
+      }
+
+      .progress-table {
+        font-size: .9rem;
+      }
+    }
+
     [hidden] { display: none !important; }
 
     @media (max-width: 640px) {
@@ -477,6 +596,7 @@
         <div class="tabs">
           <button class="tab active" data-tab="workout" type="button">Treeni</button>
           <button class="tab" data-tab="history" type="button">Historia</button>
+          <button class="tab" data-tab="progress" type="button">Kehitys</button>
           <button class="tab" data-tab="registry" type="button">Liikkeet</button>
         </div>
 
@@ -513,6 +633,17 @@
           </div>
 
           <div id="workoutStatus" class="status"></div>
+
+          <div class="workout-summary">
+            <div class="summary-box">
+              <span class="summary-label">Liikkeitä</span>
+              <span id="workoutExerciseCount" class="summary-value">0</span>
+            </div>
+            <div class="summary-box">
+              <span class="summary-label">Kokonaisvolyymi</span>
+              <span id="workoutVolume" class="summary-value">0 kg</span>
+            </div>
+          </div>
         </div>
 
         <div id="workoutList" class="workout-list"></div>
@@ -527,6 +658,23 @@
         </div>
 
         <div id="historyList" class="history-list"></div>
+      </section>
+
+
+      <section id="progressPanel" class="panel">
+        <div class="progress-layout">
+          <div class="card progress-exercises">
+            <h2>Kehitys</h2>
+            <p class="hint">
+              Valitse liike. Mukaan otetaan vain treenikerrat, joissa "Tavoite saavutettu" on rastittu.
+            </p>
+            <div id="progressButtons" class="progress-buttons"></div>
+          </div>
+
+          <div class="card progress-details">
+            <div id="progressContent" class="empty">Valitse liike vasemmalta.</div>
+          </div>
+        </div>
       </section>
 
       <section id="registryPanel" class="panel">
@@ -622,9 +770,14 @@
     const suggestions = document.querySelector("#suggestions");
     const workoutStatus = document.querySelector("#workoutStatus");
     const workoutList = document.querySelector("#workoutList");
+    const workoutExerciseCount = document.querySelector("#workoutExerciseCount");
+    const workoutVolume = document.querySelector("#workoutVolume");
 
     const historyStatus = document.querySelector("#historyStatus");
     const historyList = document.querySelector("#historyList");
+
+    const progressButtons = document.querySelector("#progressButtons");
+    const progressContent = document.querySelector("#progressContent");
 
     const registryInput = document.querySelector("#registryInput");
     const registryStatus = document.querySelector("#registryStatus");
@@ -636,6 +789,7 @@
     let unsubscribeExercises = null;
     let unsubscribeHistory = null;
     let workoutHistory = [];
+    let selectedProgressExerciseId = null;
     let saveTimer = null;
     let inactivityTimer = null;
     let seeded = false;
@@ -685,6 +839,36 @@
       return String(value).replace(".", ",");
     }
 
+
+    function exerciseVolume(item) {
+      const weight = Number(item?.weight);
+      const sets = Number(item?.sets);
+      const reps = Number(item?.reps);
+
+      if (
+        !Number.isFinite(weight) ||
+        !Number.isFinite(sets) ||
+        !Number.isFinite(reps) ||
+        weight < 0 ||
+        sets < 0 ||
+        reps < 0
+      ) {
+        return 0;
+      }
+
+      return weight * sets * reps;
+    }
+
+    function workoutTotalVolume(workout) {
+      const items = Array.isArray(workout?.exercises) ? workout.exercises : [];
+      return items.reduce((sum, item) => sum + exerciseVolume(item), 0);
+    }
+
+    function formatVolume(value) {
+      const rounded = Math.round((Number(value) || 0) * 100) / 100;
+      return `${formatNumber(rounded)} kg`;
+    }
+
     function resetInactivityTimer() {
       if (!currentUser) return;
       clearTimeout(inactivityTimer);
@@ -729,6 +913,8 @@
 
           renderRegistry();
           renderSuggestions();
+          renderProgressButtons();
+          renderProgress();
 
           if (exercises.length === 0) {
             try {
@@ -881,6 +1067,17 @@
       scheduleSave();
     }
 
+    function renderWorkoutSummaryOnly() {
+      const items = Array.isArray(currentWorkout?.exercises)
+        ? currentWorkout.exercises
+        : [];
+
+      workoutExerciseCount.textContent = items.length;
+      workoutVolume.textContent = formatVolume(
+        items.reduce((sum, item) => sum + exerciseVolume(item), 0)
+      );
+    }
+
     function updateWorkoutEntry(index, patch) {
       if (!currentWorkout?.exercises[index]) return;
 
@@ -888,6 +1085,7 @@
         ...currentWorkout.exercises[index],
         ...patch
       };
+      renderWorkoutSummaryOnly();
       scheduleSave();
     }
 
@@ -920,12 +1118,16 @@
             ...d.data()
           }));
           renderHistory();
+          renderProgressButtons();
+          renderProgress();
           setStatus(historyStatus, workoutHistory.length ? "" : "Ei vielä tallennettuja treenejä.");
         },
         error => {
           console.error(error);
           workoutHistory = [];
           renderHistory();
+          renderProgressButtons();
+          renderProgress();
           setStatus(historyStatus, "Treenihistorian lataaminen epäonnistui.", "error");
         }
       );
@@ -1012,9 +1214,153 @@
           });
         }
 
-        card.append(header, exercisesWrap);
+        const volume = document.createElement("div");
+        volume.className = "history-volume";
+        volume.textContent =
+          `Liikkeitä: ${items.length} · Kokonaisvolyymi: ${formatVolume(workoutTotalVolume(workout))}`;
+
+        card.append(header, exercisesWrap, volume);
         historyList.append(card);
       });
+    }
+
+
+    function renderProgressButtons() {
+      progressButtons.replaceChildren();
+
+      if (exercises.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "Ei liikkeitä.";
+        progressButtons.append(empty);
+        return;
+      }
+
+      exercises.forEach(exercise => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "progress-button";
+        button.textContent = exercise.name;
+
+        if (exercise.id === selectedProgressExerciseId) {
+          button.classList.add("active");
+        }
+
+        button.addEventListener("click", () => {
+          selectedProgressExerciseId = exercise.id;
+          renderProgressButtons();
+          renderProgress();
+        });
+
+        progressButtons.append(button);
+      });
+    }
+
+    function renderProgress() {
+      progressContent.replaceChildren();
+
+      if (!selectedProgressExerciseId) {
+        progressContent.className = "empty";
+        progressContent.textContent = "Valitse liike vasemmalta.";
+        return;
+      }
+
+      const exercise = exercises.find(ex => ex.id === selectedProgressExerciseId);
+
+      if (!exercise) {
+        progressContent.className = "empty";
+        progressContent.textContent = "Liikettä ei löytynyt.";
+        return;
+      }
+
+      const entries = [];
+
+      workoutHistory
+        .slice()
+        .sort((a, b) => (a.date || "").localeCompare(b.date || ""))
+        .forEach(workout => {
+          const item = Array.isArray(workout.exercises)
+            ? workout.exercises.find(entry => entry.exerciseId === exercise.id)
+            : null;
+
+          if (item && item.targetReached) {
+            entries.push({
+              date: workout.date || workout.id,
+              ...item
+            });
+          }
+        });
+
+      progressContent.className = "";
+
+      const title = document.createElement("h2");
+      title.textContent = exercise.name;
+
+      const subtitle = document.createElement("p");
+      subtitle.className = "hint";
+      subtitle.textContent = "Vain onnistuneet tavoitekerrat näkyvät tässä kehityshistoriassa.";
+
+      progressContent.append(title, subtitle);
+
+      if (entries.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "Ei vielä tavoitteen saavuttaneita treenikertoja.";
+        progressContent.append(empty);
+        return;
+      }
+
+      const table = document.createElement("table");
+      table.className = "progress-table";
+
+      const thead = document.createElement("thead");
+      thead.innerHTML = `
+        <tr>
+          <th>Päivä</th>
+          <th>Paino</th>
+          <th>Sarjat × toistot</th>
+          <th>Volyymi</th>
+          <th>Seuraava kerta</th>
+        </tr>
+      `;
+
+      const tbody = document.createElement("tbody");
+
+      entries.forEach(entry => {
+        const row = document.createElement("tr");
+
+        const date = document.createElement("td");
+        date.textContent = formatDateFi(entry.date);
+
+        const weight = document.createElement("td");
+        weight.textContent = `${formatNumber(entry.weight)} kg`;
+
+        const reps = document.createElement("td");
+        reps.textContent = `${formatNumber(entry.sets)} × ${formatNumber(entry.reps)}`;
+
+        const volume = document.createElement("td");
+        volume.textContent = formatVolume(exerciseVolume(entry));
+
+        const next = document.createElement("td");
+        next.textContent = entry.increaseNextTime ? "↑ Lisää painoa" : "—";
+
+        row.append(date, weight, reps, volume, next);
+
+        if (entry.note) {
+          const noteRow = document.createElement("tr");
+          const noteCell = document.createElement("td");
+          noteCell.colSpan = 5;
+          noteCell.className = "progress-note";
+          noteCell.textContent = `Muistiinpano: ${entry.note}`;
+          noteRow.append(noteCell);
+          tbody.append(row, noteRow);
+        } else {
+          tbody.append(row);
+        }
+      });
+
+      table.append(thead, tbody);
+      progressContent.append(table);
     }
 
     function formatDateFi(value) {
@@ -1034,6 +1380,10 @@
         document.querySelector("#workoutPanel").classList.add("active");
       } else if (name === "history") {
         document.querySelector("#historyPanel").classList.add("active");
+      } else if (name === "progress") {
+        document.querySelector("#progressPanel").classList.add("active");
+        renderProgressButtons();
+        renderProgress();
       } else {
         document.querySelector("#registryPanel").classList.add("active");
       }
@@ -1083,6 +1433,15 @@
 
     function renderWorkout() {
       workoutList.replaceChildren();
+
+      const itemsForSummary = Array.isArray(currentWorkout?.exercises)
+        ? currentWorkout.exercises
+        : [];
+
+      workoutExerciseCount.textContent = itemsForSummary.length;
+      workoutVolume.textContent = formatVolume(
+        itemsForSummary.reduce((sum, item) => sum + exerciseVolume(item), 0)
+      );
 
       if (!currentWorkout) {
         const empty = document.createElement("div");
