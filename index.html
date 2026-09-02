@@ -124,7 +124,7 @@
 
     .tabs {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(3, 1fr);
       gap: 8px;
       margin-bottom: 16px;
     }
@@ -364,6 +364,67 @@
       font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     }
 
+
+    .history-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .history-card {
+      padding: 17px;
+    }
+
+    .history-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 12px;
+    }
+
+    .history-date {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 850;
+    }
+
+    .history-exercises {
+      display: grid;
+      gap: 8px;
+    }
+
+    .history-exercise {
+      padding-top: 9px;
+      border-top: 1px solid var(--border);
+      line-height: 1.45;
+    }
+
+    .history-exercise:first-child {
+      padding-top: 0;
+      border-top: 0;
+    }
+
+    .history-exercise-name {
+      font-weight: 800;
+    }
+
+    .history-meta,
+    .previous-meta {
+      color: var(--muted);
+      font-size: .9rem;
+    }
+
+    .previous-grid {
+      display: grid;
+      gap: 4px;
+      margin-top: 6px;
+    }
+
+    .previous-note {
+      margin-top: 6px;
+      white-space: pre-wrap;
+    }
+
     [hidden] { display: none !important; }
 
     @media (max-width: 640px) {
@@ -415,6 +476,7 @@
       <div class="header-row">
         <div class="tabs">
           <button class="tab active" data-tab="workout" type="button">Treeni</button>
+          <button class="tab" data-tab="history" type="button">Historia</button>
           <button class="tab" data-tab="registry" type="button">Liikkeet</button>
         </div>
 
@@ -454,6 +516,17 @@
         </div>
 
         <div id="workoutList" class="workout-list"></div>
+      </section>
+
+
+      <section id="historyPanel" class="panel">
+        <div class="card toolbar-card">
+          <h2>Treeni­historia</h2>
+          <p class="hint">Uusimmat treenit näkyvät ensin. Avaa päivä Treeni-välilehdelle muokattavaksi.</p>
+          <div id="historyStatus" class="status"></div>
+        </div>
+
+        <div id="historyList" class="history-list"></div>
       </section>
 
       <section id="registryPanel" class="panel">
@@ -550,6 +623,9 @@
     const workoutStatus = document.querySelector("#workoutStatus");
     const workoutList = document.querySelector("#workoutList");
 
+    const historyStatus = document.querySelector("#historyStatus");
+    const historyList = document.querySelector("#historyList");
+
     const registryInput = document.querySelector("#registryInput");
     const registryStatus = document.querySelector("#registryStatus");
     const exerciseList = document.querySelector("#exerciseList");
@@ -558,6 +634,8 @@
     let exercises = [];
     let currentWorkout = null;
     let unsubscribeExercises = null;
+    let unsubscribeHistory = null;
+    let workoutHistory = [];
     let saveTimer = null;
     let inactivityTimer = null;
     let seeded = false;
@@ -825,6 +903,184 @@
       scheduleSave();
     }
 
+
+    function startHistoryListener() {
+      if (unsubscribeHistory) unsubscribeHistory();
+
+      const historyQuery = query(
+        collection(db, "gymWorkouts"),
+        orderBy("date", "desc")
+      );
+
+      unsubscribeHistory = onSnapshot(
+        historyQuery,
+        snapshot => {
+          workoutHistory = snapshot.docs.map(d => ({
+            id: d.id,
+            ...d.data()
+          }));
+          renderHistory();
+          setStatus(historyStatus, workoutHistory.length ? "" : "Ei vielä tallennettuja treenejä.");
+        },
+        error => {
+          console.error(error);
+          workoutHistory = [];
+          renderHistory();
+          setStatus(historyStatus, "Treenihistorian lataaminen epäonnistui.", "error");
+        }
+      );
+    }
+
+    function renderHistory() {
+      historyList.replaceChildren();
+
+      if (workoutHistory.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "card empty";
+        empty.textContent = "Ei vielä tallennettuja treenejä.";
+        historyList.append(empty);
+        return;
+      }
+
+      workoutHistory.forEach(workout => {
+        const card = document.createElement("article");
+        card.className = "card history-card";
+
+        const header = document.createElement("div");
+        header.className = "history-header";
+
+        const date = document.createElement("h3");
+        date.className = "history-date";
+        date.textContent = formatDateFi(workout.date || workout.id);
+
+        const openButton = document.createElement("button");
+        openButton.type = "button";
+        openButton.className = "secondary";
+        openButton.textContent = "Avaa / muokkaa";
+        openButton.addEventListener("click", async () => {
+          workoutDate.value = workout.date || workout.id;
+          switchTab("workout");
+          await loadWorkout();
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+
+        header.append(date, openButton);
+
+        const exercisesWrap = document.createElement("div");
+        exercisesWrap.className = "history-exercises";
+
+        const items = Array.isArray(workout.exercises) ? workout.exercises : [];
+
+        if (items.length === 0) {
+          const empty = document.createElement("div");
+          empty.className = "history-meta";
+          empty.textContent = "Ei liikkeitä.";
+          exercisesWrap.append(empty);
+        } else {
+          items.forEach(item => {
+            const row = document.createElement("div");
+            row.className = "history-exercise";
+
+            const name = document.createElement("div");
+            name.className = "history-exercise-name";
+            name.textContent = item.exerciseName || "Liike";
+
+            const meta = document.createElement("div");
+            meta.className = "history-meta";
+            meta.textContent =
+              `${formatNumber(item.weight)} kg · ${formatNumber(item.sets)} × ${formatNumber(item.reps)}`;
+
+            const flags = document.createElement("div");
+            flags.className = "history-meta";
+
+            const flagTexts = [];
+            if (item.targetReached) flagTexts.push("✓ Tavoite saavutettu");
+            if (item.increaseNextTime) flagTexts.push("↑ Lisää painoa ensi kerralla");
+            flags.textContent = flagTexts.join(" · ");
+
+            row.append(name, meta);
+            if (flagTexts.length) row.append(flags);
+
+            if (item.note) {
+              const note = document.createElement("div");
+              note.className = "history-meta";
+              note.textContent = `Muistiinpano: ${item.note}`;
+              row.append(note);
+            }
+
+            exercisesWrap.append(row);
+          });
+        }
+
+        card.append(header, exercisesWrap);
+        historyList.append(card);
+      });
+    }
+
+    function formatDateFi(value) {
+      if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return value || "";
+      const [year, month, day] = value.split("-");
+      return `${day}.${month}.${year}`;
+    }
+
+    function switchTab(name) {
+      document.querySelectorAll(".tab").forEach(t => {
+        t.classList.toggle("active", t.dataset.tab === name);
+      });
+
+      document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+
+      if (name === "workout") {
+        document.querySelector("#workoutPanel").classList.add("active");
+      } else if (name === "history") {
+        document.querySelector("#historyPanel").classList.add("active");
+      } else {
+        document.querySelector("#registryPanel").classList.add("active");
+      }
+    }
+
+    function renderPrevious(previousEl, prev) {
+      previousEl.replaceChildren();
+
+      const title = document.createElement("strong");
+      title.textContent = "Edellinen kerta";
+
+      if (!prev) {
+        previousEl.append(title, document.createTextNode(": ei aiempaa merkintää."));
+        return;
+      }
+
+      previousEl.append(title, document.createTextNode(` · ${formatDateFi(prev.date)}`));
+
+      const grid = document.createElement("div");
+      grid.className = "previous-grid previous-meta";
+
+      const basic = document.createElement("div");
+      basic.textContent =
+        `Paino: ${formatNumber(prev.weight)} kg · Sarjat: ${formatNumber(prev.sets)} · Toistot / sarja: ${formatNumber(prev.reps)}`;
+
+      const target = document.createElement("div");
+      target.textContent = `Tavoite saavutettu: ${prev.targetReached ? "Kyllä" : "Ei"}`;
+
+      const increase = document.createElement("div");
+      increase.textContent = `Lisätään painoa ensi kerralla: ${prev.increaseNextTime ? "Kyllä" : "Ei"}`;
+
+      grid.append(basic, target, increase);
+
+      if (prev.note) {
+        const note = document.createElement("div");
+        note.className = "previous-note";
+        note.textContent = `Muistiinpano: ${prev.note}`;
+        grid.append(note);
+      } else {
+        const note = document.createElement("div");
+        note.textContent = "Muistiinpano: —";
+        grid.append(note);
+      }
+
+      previousEl.append(grid);
+    }
+
     function renderWorkout() {
       workoutList.replaceChildren();
 
@@ -864,23 +1120,10 @@
 
         const previous = document.createElement("div");
         previous.className = "previous";
-        previous.innerHTML = "<strong>Edellinen kerta:</strong> haetaan…";
+        previous.textContent = "Edellinen kerta: haetaan…";
 
         getPreviousExerciseEntry(item.exerciseId, currentWorkout.date).then(prev => {
-          if (!prev) {
-            previous.innerHTML = "<strong>Edellinen kerta:</strong> ei aiempaa merkintää.";
-            return;
-          }
-
-          const flags = [
-            prev.targetReached ? "✓ tavoite saavutettu" : "",
-            prev.increaseNextTime ? "↑ lisää painoa ensi kerralla" : ""
-          ].filter(Boolean).join(" · ");
-
-          previous.innerHTML =
-            `<strong>Edellinen kerta ${prev.date}:</strong> ` +
-            `${formatNumber(prev.weight)} kg · ${formatNumber(prev.sets)} × ${formatNumber(prev.reps)}` +
-            (flags ? `<br>${flags}` : "");
+          renderPrevious(previous, prev);
         });
 
         const fields = document.createElement("div");
@@ -1178,18 +1421,7 @@
     }
 
     document.querySelectorAll(".tab").forEach(tab => {
-      tab.addEventListener("click", () => {
-        document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-        document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
-
-        tab.classList.add("active");
-
-        if (tab.dataset.tab === "workout") {
-          document.querySelector("#workoutPanel").classList.add("active");
-        } else {
-          document.querySelector("#registryPanel").classList.add("active");
-        }
-      });
+      tab.addEventListener("click", () => switchTab(tab.dataset.tab));
     });
 
     workoutDate.addEventListener("change", loadWorkout);
@@ -1242,6 +1474,12 @@
           unsubscribeExercises = null;
         }
 
+        if (unsubscribeHistory) {
+          unsubscribeHistory();
+          unsubscribeHistory = null;
+        }
+
+        workoutHistory = [];
         signedOut.hidden = false;
         signedIn.hidden = true;
         currentWorkout = null;
@@ -1256,6 +1494,7 @@
 
       resetInactivityTimer();
       startExerciseListener();
+      startHistoryListener();
       await loadWorkout();
     });
   </script>
