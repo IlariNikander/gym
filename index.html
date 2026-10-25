@@ -433,6 +433,36 @@
       margin-top: 14px;
     }
 
+    .recovery-option {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      cursor: pointer;
+      color: var(--text);
+      background: var(--card);
+    }
+
+    .recovery-option input {
+      width: 19px;
+      height: 19px;
+      margin: 0;
+      accent-color: var(--accent);
+    }
+
+    .recovery-option span { font-weight: 800; }
+
+    .recovery-label {
+      display: inline-block;
+      margin-left: 8px;
+      font-size: .8rem;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
     .summary-box {
       padding: 12px 14px;
       border-radius: 12px;
@@ -651,6 +681,10 @@
               <span class="summary-label">Kokonaisvolyymi</span>
               <span id="workoutVolume" class="summary-value">0 kg</span>
             </div>
+            <label class="recovery-option" for="recoveryWorkout">
+              <input id="recoveryWorkout" type="checkbox">
+              <span>Palauttava treeni</span>
+            </label>
           </div>
         </div>
 
@@ -780,6 +814,7 @@
     const workoutList = document.querySelector("#workoutList");
     const workoutExerciseCount = document.querySelector("#workoutExerciseCount");
     const workoutVolume = document.querySelector("#workoutVolume");
+    const recoveryWorkout = document.querySelector("#recoveryWorkout");
 
     const historyStatus = document.querySelector("#historyStatus");
     const historyList = document.querySelector("#historyList");
@@ -1041,12 +1076,14 @@
           const data = snapshot.data();
           currentWorkout = {
             date,
+            recoveryWorkout: data.recoveryWorkout === true,
             exercises: Array.isArray(data.exercises) ? data.exercises : []
           };
           setStatus(workoutStatus, "Treeni ladattu.", "ok");
         } else {
           currentWorkout = {
             date,
+            recoveryWorkout: false,
             exercises: []
           };
           setStatus(workoutStatus, "Uusi treeni.", "");
@@ -1065,6 +1102,7 @@
       const items = currentWorkout?.exercises || [];
       return {
         date: currentWorkout.date,
+        recoveryWorkout: currentWorkout.recoveryWorkout === true,
         exerciseIds: items.map(item => item.exerciseId),
         exercises: items,
         updatedAt: serverTimestamp()
@@ -1106,7 +1144,7 @@
 
         const candidates = snapshot.docs
           .map(d => d.data())
-          .filter(data => data.date && data.date < beforeDate)
+          .filter(data => data.date && data.date < beforeDate && data.recoveryWorkout !== true)
           .sort((a, b) => b.date.localeCompare(a.date));
 
         let result = null;
@@ -1201,6 +1239,7 @@
       unsubscribeHistory = onSnapshot(
         historyQuery,
         snapshot => {
+          previousCache.clear();
           workoutHistory = snapshot.docs.map(d => ({
             id: d.id,
             ...d.data()
@@ -1244,6 +1283,7 @@
         if (currentWorkout?.date === date) {
           currentWorkout = {
             date,
+            recoveryWorkout: false,
             exercises: []
           };
           renderWorkout();
@@ -1282,6 +1322,12 @@
         const date = document.createElement("h3");
         date.className = "history-date";
         date.textContent = formatDateFi(workout.date || workout.id);
+        if (workout.recoveryWorkout === true) {
+          const tag = document.createElement("span");
+          tag.className = "recovery-label";
+          tag.textContent = "Palauttava treeni";
+          date.append(tag);
+        }
 
         const actions = document.createElement("div");
         actions.className = "history-actions";
@@ -1576,6 +1622,8 @@
         ? currentWorkout.exercises
         : [];
 
+      recoveryWorkout.checked = currentWorkout?.recoveryWorkout === true;
+      recoveryWorkout.disabled = !currentWorkout;
       workoutExerciseCount.textContent = itemsForSummary.length;
       workoutVolume.textContent = formatVolume(
         itemsForSummary.reduce((sum, item) => sum + exerciseVolume(item), 0)
@@ -1956,6 +2004,12 @@
           authStatus.textContent = `Google-kirjautuminen epäonnistui: ${error.code || "tuntematon virhe"}`;
         }
       }
+    });
+
+    recoveryWorkout.addEventListener("change", () => {
+      if (!currentWorkout) return;
+      currentWorkout.recoveryWorkout = recoveryWorkout.checked;
+      scheduleSave();
     });
 
     document.querySelector("#signOut").addEventListener("click", () => signOut(auth));
